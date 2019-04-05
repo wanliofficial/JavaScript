@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>apply/bind/call的实现</title>
+	</head>
+
+	<body>
+		
+	</body>
+	<script>
+		// 私有属性基于Symbol
+
+		// call 的实现 call的参数是一个个传进去的
+		// 参数传递可以用ES6的解构接收剩余参数，也可以使用arguments处理参数
+
+		// ES6结构参数
+		/*Function.prototype.myCall = (context, ...args) => {
+			context = context || window;
+			context.__fn__ = this; // 将需要调用的函数添加到这个对象上
+			let result = context.__fn__(...args); // 然后执行这个函数
+			// 另一种写法
+			// let args = Array.from(arguments).slice.call(arguments.length, 1);
+			// let result = context.__fn__(...args);
+			delete context.__fn__; // 执行完删除这个属性，防止对该对象造成污染
+			return result;
+		}*/
+
+		// arguments传递参数
+		Function.prototype.myCall = function(context) {
+			context = context || window;
+			var args = arguments, realArgs = [], result = '';
+			for (var i = 1; i < args.length; i++) {
+				realArgs.push('args[' + i + ']');
+			}
+			context.__fn__ = this; // 将需要调用的函数添加到这个对象上
+			result = eval('context.__fn__(' + realArgs + ')');
+			//context.__fn__(...args); // 然后执行这个函数
+			delete context.__fn__; // 执行完删除这个属性，防止对该对象造成污染
+			return result;
+		}
+
+		// 测试
+		var name = 'global';
+		let obj = {
+			name: 'wanli',
+			age: 20
+		};
+
+		function say(address = 'wuhan') {
+			console.log(`my name is: ${this.name}, I am come from ${address}`);
+		}
+
+		say();
+
+		say.myCall(obj, 'optical valley biolake');
+
+		// apply 的实现 apply的参数是一个数组
+
+		Function.prototype.myApply = function (context, arr) { // 思考，这里为什么不能用箭头函数？
+			context = context || window;
+			context.__fn__ = this;
+			let result = '', args = [];
+			if (args instanceof Array) {
+				for(let i = 0; i < arr.length; i++) {
+					args.push('arr[' + i + ']');
+				}
+				result = eval('context.__fn__('+ args +')');
+				delete context.__fn__;
+				return result;
+			} else {
+				throw new Error('第二个参数必须为一个数组');
+			}
+		}
+
+		// Function.prototype.myApply = function(context, arr){
+		// 	context = context || window;
+		// 	context.fn = this;
+		// 	var result ;
+		// 	if(!arr) {
+		// 		result = context.fn();
+		// 	} else {
+		// 		result = context.fn(arr)
+		// 	}
+		// 	delete context.fn;
+		// 	return result;
+		// }
+
+		// 测试
+		function testApply() {
+			return arguments[1].reduce();
+		}
+
+		let testArr = [1,2,3,4,5,6,7,8];
+		//console.log(testApply.myApply(this, testArr));
+
+		function add(c,d){
+			return this.a + this.b + c + d;
+		}
+
+		var s = { a:1, b:2 };
+		console.log(add.call(s,3,4)); // 1+2+3+4 = 10
+		console.log(add.apply(s,[5,6])); // 1+2+5+6 = 14 
+		console.log(add.myApply(s,[5,6]));
+		
+
+		// bind的实现
+		Function.prototype.myBind = function(context) {
+			let _this = this; // 保存原函数
+			let originArgs = Array.prototype.slice.call(arguments, 1); // 接收参数
+			let fNOP = function () {}; // 过渡函数
+			let fBound = function() {
+				let bindArgs = Array.prototype.slice.call(arguments);
+				_this.apply(this instanceof _this ? this : context, originArgs.concat(bindArgs));
+			}
+			fNOP.prototype = this.prototype;
+			fBound.prototype = new fNOP();
+			return fBound;
+		}
+
+		let test = {
+			name: 'test'
+		};
+		let o = {
+			name: 'o',
+			fn: function(){
+				console.log(this.name, ...arguments);  //这里把参数显示一下
+			}
+		};
+
+		// bind
+		b = o.fn.bind(test, 1, 2);
+		b(); // "test" 1 2
+		b(3,4); // "test" 1 2 3 4
+
+		//myBind
+		b = o.fn.myBind(test, 1, 2);
+		b(); // "test" 1 2
+		b(3, 4); // "test" 1 2 3 4
+
+	</script>
+</html>

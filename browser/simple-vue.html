@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>简易VUE</title>
+	</head>
+
+	<body>
+		<div id="app">
+			<span @click="go">点我点我</span>
+			<p v-html="html">{{ html }}</p>
+			<h4>{{ text1 }}</h4>
+			<h3 id="paragraph">{{ text }}</h3>
+			<input type="text" id="input" v-model="text"/>
+		</div>
+
+		<div id="wrap">
+			{{      obj.test      }}
+			<p v-html="test"></p>
+			<input type="text" v-model="form">
+			<input type="text" v-model="form">
+			<button @click="changeValue">改变值</button>
+			{{    form   }} 
+		</div>
+
+		<div id="app2" style="margin: 100px auto 0 auto;width: 300px;background: green;padding: 10px;">
+			<p v-click="autoChange">测试下模板引擎：{{ str }}</p>
+			<input type="text" v-model="num" />
+			<input id="btn" type="button" value="添加到Todolist" v-click="addList" /><br/>
+			<span>您输入的是：</span><span v-bind="num"></span>
+			<ul id="list"></ul>
+		</div>
+	</body>
+	<script>
+		// Object.defineProperty 版本
+
+		class Vue {
+			constructor(options = {}) {
+				this.$el = document.querySelector(options.el);
+				let data = this.data = options.data;
+				Object.keys(data).forEach((v, i) => { // 代理this.data.xxx的数据，使其支持this.xxx形式访问
+					this.proxyData(v);
+				});
+				this.methods = options.methods;
+				this.watchTask = {};
+				this.observer(data);
+				this.compile(this.$el); // 将数据渲染到元素上
+			}
+			proxyData(key) {
+				let _this = this;
+				Object.defineProperty(this, key, {
+					enumerable: true,
+					configurable: false,
+					get() {
+						return _this.data[key];
+					},
+					set(newVal) {
+						_this.data[key] = newVal;
+					}
+				});
+			}
+			observer(data) {
+				let _this = this;
+				Object.keys(data).forEach((key, i) => {
+					let value = data[key];
+					this.watchTask[key] = [];
+					Object.defineProperty(data, key, {
+						enumerable: true,
+						configurable: false,
+						get() {
+							return value;
+						},
+						set(newVal) {
+							if (newVal != value) {
+								value = newVal;
+								_this.watchTask[key].forEach((v, i) => {
+									v.update();
+								});
+							}
+						}
+					})
+				});
+			}
+			compile(el) {
+				let nodes = el.childNodes;
+				for (let i = 0; i < nodes.length; i++) {
+					const node = nodes[i];
+					if (node.nodeType === 1) { // 判断是否是元素节点
+						if(node.childNodes.length > 0) this.compile(node);
+						if (node.hasAttribute('v-model') && (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA')) { // 获取v-model属性
+							node.addEventListener('input', (() => {
+								let attrValue = node.getAttribute('v-model');
+								this.watchTask[attrValue].push(new Watch(node, this, attrValue, 'value'));
+								node.removeAttribute('v-model');
+								return () => {
+									this.data[attrValue] = node.value;
+								}
+							})());
+						}
+						if (node.hasAttribute('v-html')) { // 获取v-html属性
+							let attrValue = node.getAttribute('v-html');
+							this.watchTask[attrValue].push(new Watch(node, this, attrValue, 'innerHTML'));
+							node.removeAttribute('v-html'); 
+						};
+						this.compileText(node,'innerHTML');
+						if (node.hasAttribute('@click')) { // 获取@click属性
+							let attrValue = node.getAttribute('@click');
+							node.removeAttribute('@click');
+							node.addEventListener('click', e => {
+								this.methods[attrValue] && this.methods[attrValue].bind(this)();
+							});
+						}
+					} else if (node.nodeType === 3) { // 判断是否是文本节点
+						let text = node.textContent.trim();
+						if (!text) continue;
+						this.compileText(node, 'textContent');
+					}
+				}
+			}
+			compileText(node, type) { // 获取 {{}} 里面的内容 
+				let reg = /\{\{(.*?)\}\}/g, txt = node.textContent;
+				if (reg.test(txt)) { // 非双花括号字符串返回值为undefined
+					node.textContent = txt.replace(reg, (match, value) => {
+						value = value.trim(); // 再一次去掉空格
+						let tpl = this.watchTask[value] || [];
+						tpl.push(new Watch(node, this, value, type));
+						if (value.split('.').length > 1) { // 判断 {{Person.name.firstname}} 这种情况
+							let v = null;
+							value.split('.').forEach((val, i) => {
+								v = !v ? this[val] : v[val];
+							});
+							return v;
+						} else {
+							return this[value];
+						}
+					});
+				}
+			}
+			computed() { // 待完善方法
+
+			}
+			watch() { // 待完善方法
+
+			}
+			filter() { // 待完善方法
+
+			}
+			// 生命周期内的其他方法
+		}
+
+		class Watch {
+			constructor(el, vm, value, type) {
+				this.el = el;
+				this.vm = vm;
+				this.value = value;
+				this.type = type;
+				this.update();
+			}
+			update() {
+				this.el[this.type] = this.vm.data[this.value];
+			}
+		}
+
+		//获取段落的节点
+		const paragraph = document.getElementById('paragraph');
+		//获取输入框节点
+		const input = document.getElementById('input');
+
+		//添加input监听事件
+		input.addEventListener('input', function (e) {
+			myText.text = e.target.value;   //更新 myText 的值
+		}, false);
+
+		let v = new Vue({
+			el: '#app',
+			data: {
+				text1: 'test',
+				text: '你好',
+				html: '<strong>我是粗体</strong>'
+			},
+			methods: {
+				go() {
+					console.log('牛逼了， 真的实现了一个简易的VUE');
+				}
+			}
+		});
+
+		new Vue({
+            el: '#wrap',
+            data:{
+                form: '这是form的值',
+                test: '<strong>我是粗体</strong>',
+                obj:{
+                    test:123
+                }
+            },
+            methods:{
+                changeValue(){
+                    console.log(this.form)
+                    this.form = '值被我改变了，气不气？'
+                }
+            }
+        });
+
+		// Proxy 版本
+		// https://www.jianshu.com/p/2a8ec76e0090
+		let obj = {
+			a : 1
+		}
+		let proxyObj = new Proxy(obj,{
+			get : function (target,prop) {
+				return prop in target ? target[prop] : 0
+			},
+			set : function (target,prop,value) {
+				target[prop] = 888;
+			}
+		})
+		
+		console.log(proxyObj.a);        // 1
+		console.log(proxyObj.b);        // 0
+
+		proxyObj.a = 666;
+		console.log(proxyObj.a);        // 888
+			
+		//需要代理的数据对象
+		const data = {
+			text: 'hello world'
+		}
+
+		const handler = {
+			//监控 data 中的 text 属性变化
+			set: function (target, prop, value) {
+				if ( prop === 'text' ) {
+						//更新值
+						target[prop] = value;
+						//更新视图
+						paragraph.innerHTML = value;
+						input.value = value;
+						return true;
+				} else {
+					return false;
+				}
+			}
+		}
+
+		//构造 proxy 对象
+		const myText = new Proxy(data, handler);
+
+		//初始化值
+		myText.text = data.text;
+
+		// https://www.jianshu.com/p/860418f0785c
+		// https://github.com/nightzing/vue3-Proxy/blob/master/proxyVue.html
+
+		class proxyVue {
+			constructor(options = {}) {
+				this.$options = options;
+				this.$methods = this.$options.methods;
+				this.subscribe = {};
+				this._data = this.$options.data;
+				this.observer(this.$options.data);
+				this.compile(document.querySelector(this.$options.el));
+			}
+			publish(watcher) {
+				if (!this.subscribe[watcher.property]) {
+					this.subscribe[watcher.property] = [];
+				}
+				this.subscribe[watcher.property].push(watcher);
+			}
+			observer(data) {
+				const _this = this;
+				let handler = { // 使用Proxy实现
+					get: function(target, property) {
+						return target[property];
+					},
+					set: function(target, property, value) {
+						let res = Reflect.set(target, property, value);
+						_this.subscribe[property].map(v => {
+							v.update();
+						});
+						return res;
+					}
+				}
+				this.$data = new Proxy(data, handler);
+			}
+			compile(el) {
+				let data = this.$data;
+				let nodes = el.childNodes;
+				for (let i = 0; i < nodes.length; i++) {
+					const item = nodes[i];
+					if (item.nodeType === 1) { // 元素节点
+						if(item.childNodes.length > 0) {
+							this.compile(item);
+						}
+						if(item.hasAttribute('v-model')) {
+							let property = item.getAttribute('v-model');
+							this.publish(new Watcher(item, 'value', data, property));
+							item.addEventListener('input', () => {
+								data[property] = item.value;
+							});
+						}
+						if(item.hasAttribute('v-click')) {
+							let methodName = item.getAttribute('v-click');
+							let method = this.$methods[methodName].bind(data);
+							item.addEventListener('click', method);
+						}
+						if(item.hasAttribute('v-bind')) {
+							let property = item.getAttribute('v-bind');
+							this.publish(new Watcher(item, 'innerHTML', data, property));
+						}
+					} else if (item.nodeType === 3) { // 文本节点
+						this.compileText(item);
+					}
+				}
+			}
+			compileText(node) {
+				let reg = /\{\{(.*?)\}\}/g, data = this.$data;
+				node.textContent = node.textContent.replace(reg, (matched, value) => {
+					value = value.trim();
+					this.publish(new Watcher(node, 'textContent', data, value));
+					if (value.split('.').length > 1) {
+						let v = null;
+						v.split('.').map((v, i) => {
+							v = !v ? data[value] : v[value];
+						});
+						return v;
+					} else {
+						return data[value];
+					}
+				});
+			}
+		}
+
+		class Watcher {
+			constructor(node, attr, data, property) {
+				this.node = node;
+				this.attr = attr;
+				this.data = data;
+				this.property = property;
+			}
+			update() {
+				this.node[this.attr] = this.data[this.property];
+			}
+		}
+
+		const Render = {
+			init: function(arr) {
+				const fragment = document.createElementFrament();
+				for(let i = 0; i < arr.length; i++) {
+					const li = document.createElement('li');
+					li.textContent = arr[i];
+					fragment.appendChild(li);
+				}
+				list.appendChild(fragment);
+			},
+			addList: function(val) {
+				const li = document.createElement('li');
+				li.textContent = val;
+				list.appendChild(li);
+			}
+		};
+
+		window.onload = function() {
+			new proxyVue({
+				el: '#app2',
+				data: {
+					num: 0,
+					arr: [],
+					str: '随便写点什么吧'
+				},
+				methods: {
+					addList() {
+						this.arr.push(this.num);
+						Render.addList(this.num);
+					},
+					autoChange() {
+						let timer = setTimeout(() => {
+							this.str = "我被改变了！！！";
+							clearTimeout(timer);
+						}, 1000);
+					}
+				}
+			});
+		}
+	</script>
+</html>
