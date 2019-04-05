@@ -1,7 +1,6 @@
 /**
  * 仿照express实现中间件的功能
  *
- * Created by BadWaka on 2017/3/6.
  */
 
 var http = require('http');
@@ -68,6 +67,3 @@ function middlewareC(req, res, next) {
 app.use(middlewareA);
 app.use(middlewareB);
 app.use(middlewareC);
-
-
-// 链接：https://www.jianshu.com/p/797a4e38fe77
