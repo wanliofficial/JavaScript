@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>js高级教程</title>
+	<style type="text/css">
+	</style>
+</head>
+
+<body>
+	<div class="a">1</div>
+	<div class="a">2</div>
+	<div class="a">3</div>
+	<div class="a">4</div>
+	<span class="distination">360搜索</span>
+	<div class="target"></div>
+	<div class="target"></div>
+	<div class="target"></div>
+	<div class="target"></div>
+	<a>超链接</a>
+	<div class="here">
+		<span>123</span>
+	</div>
+	<div class="here">
+		<span>456</span>
+		<span>789</span>
+	</div>
+</body>
+<script>
+	(function(w){
+		function jQuery(selector) {
+			return new jQuery.fn.init(selector);
+		}
+
+		jQuery.fn = jQuery.prototype = { // 这里是一些核心方法
+			constructor: jQuery,
+			jquery: '0.0.1', // 版本号
+			length: 0,
+			selector: null,
+			toArray: function() {
+				return [].slice.call(this);
+			},
+			get: function(i) {
+				if (i == null) return this.toArray();
+				if (i >= 0) {
+					return this[i];
+				} else {
+					return this[this.length + i];
+				}
+			},
+			_get: function(i) {
+				return i == null ? this.toArray : this[this.length + 1];
+			},
+			each: function(fn) {
+				return jQuery.each(this, fn);
+			},
+			map: function(fn) {
+				return jQuery.map(this, fn);
+			},
+			slice: function() {
+				return jQuery([].slice.apply(this, arguments));
+			},
+			eq: function(i) {
+				if (i == null) return jQuery();
+				if (i >= 0) {
+					return jQuery(this[i]);
+				} else {
+					return jQuery(this[this.length + i]);
+				}
+			},
+			first: function() {
+				return this.get(1);
+			},
+			last:function() {
+				return this.get(-1);
+			},
+			push: [].push,
+			sort: [].sort,
+			splice: [].splice
+		}
+
+		var init = jQuery.fn.init = function(selector) { // 构造函数
+			if (!selector) return this;
+			if (jQuery.isFunction(selector)) {
+				// 做dom加载状态判断
+				jQuery.ready(selector);
+			} else if (jQuery.isString(selector)) { // 判断是不是字符串
+				selector = jQuery.trim(selector);
+				if (jQuery.isHTML(selector)) { // 判断是不是HTML代码片段
+					var tempDiv = document.createElement('div');
+					tempDiv.innerHTML = selector;
+					[].push.apply(this, [].slice.call(tempDiv.childNodes)); // 修复IE8不兼容问题
+					return this;
+				} else { // 否则就是元素选择器
+					try {
+						var elements = document.querySelectorAll(selector);
+						[].push.apply(this, [].slice.call(elements));
+						return this;
+					} catch (e) {
+						this.length = 0;
+						return this;
+					}
+				}
+			} else if (jQuery.isLikeArray(selector)) { // 否则再判断是不是类数组
+				[].push.apply(this, [].slice.call(selector));
+			} else { // 最后就是一般类型的值，直接添加到实例上
+				this[0] = selector;
+				this.length = 1;
+			}
+		}
+
+		jQuery.extend = jQuery.fn.extend = function(obj) { // 给构造函数以及原型对象添加扩展方法
+			var i = 1, key
+				arg = arguments,
+				target = arg[0],
+				argLen = arg.length;
+			if (argLen === 1) {
+				target = this;
+				i = 0;
+			}
+
+			for (; i < argLen; i++) {
+				for(key in arg[i])
+					target[key] = arg[i][key];
+			}
+
+			return target;
+		}
+
+		init.prototype = jQuery.fn;
+
+		/*init.isHTML = function(html) { // 判断是不是HTML片段
+			if(!html) return false;
+			if (html.charAt(0) == '<' && html.charAt(html.length - 1) == '>' && html.length > 3)
+				return true;
+			return false;
+		}
+
+		init.isLikeArray = function(obj) {
+			if (init.isFunction(obj) || init.isWindow(obj) || !init.isObject(obj)) return false;
+			if (({}).toString.call(obj) === '[object Array]') return true;
+			if ('length' in obj && obj.length === 0 || obj.length - 1 in obj) return true;
+		}
+
+		init.trim = function(obj) { // 清除空格的方法
+			if (typeof obj !== 'string') { // 判断是不是字符串
+				return obj;
+			}
+			if (obj.trim) { // 判断浏览器支不支持内置trim方法
+				return obj.trim();
+			}
+
+			return obj.replace(/^\s+|\s+$/g, '')// 使用正则清除空格
+		}
+
+		init.isFunction = function(obj) { // 判断是不是函数
+			return typeof obj === 'function';
+		}
+
+		init.isWindow = function(obj) { // 判断是不是window对象
+			return !!obj && obj.window === obj ? true : false
+		}
+
+		init.isObject = function(obj) { //判断是不是对象
+			if (obj === null) return false;
+			return typeof obj === 'object' || typeof obj === 'function';
+		}*/
+
+		jQuery.extend({ // 上面实例方法统统纳入extend中
+			isHTML: function(html) {
+				if(!html) return false;
+				if (html.charAt(0) == '<' && html.charAt(html.length - 1) == '>' && html.length > 3)
+					return true;
+				return false;
+			},
+			isLikeArray: function(obj) {
+				if (jQuery.isFunction(obj) || jQuery.isWindow(obj) || !jQuery.isObject(obj)) return false;
+				if (({}).toString.call(obj) === '[object Array]') return true;
+				if ('length' in obj && obj.length === 0 || obj.length - 1 in obj) return true;
+			},
+			isWindow: function(obj) {
+				return !!obj && obj.window === obj ? true : false
+			},
+			isFunction: function(obj) {
+				return typeof obj === 'function';
+			},
+			isString: function(obj) {
+				return typeof obj === 'string';
+			},
+			isObject: function(obj) {
+				if (obj === null) return false;
+				return typeof obj === 'object' || typeof obj === 'function';
+			},
+			trim: function(str) {
+				if (typeof str !== 'string') { // 判断是不是字符串
+					return str;
+				}
+				if (str.trim) { // 判断浏览器支不支持内置trim方法
+					return str.trim();
+				}
+
+				return str.replace(/^\s+|\s+$/g, '')// 使用正则清除空格
+			},
+			each: function(obj, fn) {
+				if ('length' in obj) {
+					var i = 0, len = obj.length;
+					for (; i < len; i++) {
+						if (fn.call(obj[i], i , obj[i]) === false) break;
+					}
+				} else {
+					for (var key in obj) {
+						if (fn.call(obj[key], key, obj[key]) === false) break;
+					}
+				}
+			},
+			map: function(obj, fn) {
+				var i, len, result = [];
+				if ('length' in obj) {
+					for (i = 0, len = obj.length; i < len; i++) {
+						result.push(fn.call(obj[i], i, obj[i]));
+					}
+				} else {
+					for (i in obj) {
+						result.push(fn.call(obj[i], i, obj[i]));
+					}
+				}
+				return result;
+			},
+			ready: function(fn) {
+				if (document.readyState === 'complete') {
+					fn();
+				} else if (document.addEventListener) {
+					document.addEventListener('DOMContentLoaded', fn);
+				} else {
+					document.attachEvent('onreadystatechange', function(){
+						if (document.readyState === 'complete') fn();
+					});
+				}
+			},
+			getStyle: function(dom, style) {
+				if (window.getComputedStyle) {
+					return window.getComputedStyle(dom)[style];
+				} else {
+					return dom.currentStyle[style];
+				}
+			},
+			addEvent: function(ele, type, fn) {
+				if (!ele.nodeType || !jQuery.isString(type) || !jQuery.isFunction(fn))
+					return;
+
+				if (window.addEventListener) {
+					ele.addEventListener(type, fn);
+				} else {
+					ele.attachEvent('on' + type, fn);
+				}
+			},
+			removeEvent: function(ele, type, fn) {
+				if (!ele.nodeType || !jQuery.isString(type) || !jQuery.isFunction(fn))
+					return;
+
+				if (window.removeEventListener) {
+					ele.removeEventListener(type, fn);
+				} else {
+					ele.detachEvent('on' + type, fn);
+				}
+			},
+			// ajax
+			ajaxSettings: {
+				url: window.location.href,
+				type: 'GET',
+				async: true,
+				dataType: 'json',
+				contentType: 'application/x-www-form-urlencode; charset=UTF-8',
+				timeout: null,
+				success: function() {},
+				error: function() {},
+				complete: function() {}
+
+			},
+			urlStringify: function(data) {
+				var result = '', key;
+
+				if (jQuery.isObject(data)) return result;
+
+				for(var key in data)
+					result += window.encodeURLComponent(key) + '=' + window.encodeURLComponent(data[key]) + '&';
+
+				return result.slice(0, -1);
+
+			},
+			processOptions: function(options){
+				var optionsNew = {};
+				jQuery.extend(optionsNew, jQuery.ajaxSettings, options);
+
+				optionsNew.data = jQuery.urlStringify(optionsNew.data);
+				optionsNew.type = optionsNew.type.toUpperCase();
+
+				if (optionsNew.type === 'GET') {
+					optionsNew.url += (optionsNew.data ? '?': '') + optionsNew.data;
+					optionsNew.data = null;
+				}
+
+				return optionsNew;
+			},
+			ajax: function(options) {
+				var xhr, result, optionsNew, timer;
+				optionsNew = jQuery.processOptions(options);
+				xhr = new XMLHttpRequest();
+				xhr.open(optionsNew.type, optionsNew.url, optionsNew.async);
+				if(optionsNew.type === 'POST') {
+					xhr.setRequestHeader('Content-Type', optionsNew.contentType);
+				}
+				xhr.onreadystatechange = function() {
+					if (xhr.readyState === 4) {
+						clearTimeout(timer);
+						optionsNew.complete();
+						if (xhr.status >= 200 && xhr.status <= 300 || xhr.status === 304) {
+							switch(optionsNew.dataType.toLowerCase()) {
+								case 'json':
+									result = JSON.parse(xhr.responseText);
+								break;
+								case 'script':
+									eval(xhr.responseText);
+									result = xhr.responseText;
+								break;
+								case 'style':
+									$('<style></style>').html(xhr.responseText).appendTo('head');
+									result = xhr.responseText;
+								break;
+								default:
+									result = xhr.responseText;
+								break;
+							}
+							optionsNew.success(result);
+						}
+					} else {
+						optionsNew.error(xhr.status);
+					}
+				}
+				if (optionsNew.timeout) {
+					timer = setTimeout(function(){
+						optionsNew.error('超时');
+						xhr.onreadystatechange = null;
+					}, optionsNew.timeout)
+				}
+				xhr.send(optionsNew.data);
+			},
+			get: function(url, data, fn) {
+				fn = fn || data || function() {};
+				jQuery.ajax({
+					url: url,
+					data: data,
+					type: 'GET',
+					success: fn
+				});
+			},
+			post: function(url, data, fn) {
+				fn = fn || data || function() {};
+				jQuery.ajax({
+					url: url,
+					data: data,
+					type: 'POST',
+					success: fn
+				});
+			},
+			getJSON: function(url, data, fn) {
+				fn = fn || data || function() {};
+				jQuery.ajax({
+					url: url,
+					data: data,
+					dataType: 'json',
+					success: fn
+				});
+			},
+			getScript: function(url, data, fn) {
+				fn = fn || data || function() {};
+				jQuery.ajax({
+					url: url,
+					data: data,
+					dataType: 'script',
+					success: fn
+				});
+			},
+			getStyle: function(url, data, fn) {
+				fn = fn || data || function() {};
+				jQuery.ajax({
+					url: url,
+					data: data,
+					dataType: 'style',
+					success: fn
+				});
+			}
+		});
+
+		jQuery.fn.extend({
+			// DOM相关方法
+			empty: function() {
+				/*this.each(function(){
+					this.innerHTML = '';
+				});*/
+				for (var i = 0, len = this.length; i < len; i++) {
+					this[i].innerHTML = '';
+				}
+				return this;
+			},
+			remove: function() {
+				/*this.each(function(){
+					this.parentNode.removeChild(this);
+				});*/
+				for (var i = 0, len = this.length; i < len; i++) {
+					this[i].parentNode.removeChild(this[i]);
+				}
+				return this;
+			},
+			html: function(html) {
+				var result = '';
+				if (arguments.length === 0) { // 没有传参，返回所有元素的所有文本
+					/*this.each(function(){
+						return this[0].innerHTML;
+					});*/
+					return this[0].innerHTML;
+				} else {
+					/*this.each(function(){
+						this.innerHTML = html;
+					});*/
+					for (var i = 0, len = this.length; i < len; i++) {
+						this[i].innerHTML = html;
+					}
+					return this;
+				}
+			},
+			text: function(text) {
+				var result = '';
+				if (arguments.length === 0) {
+					/*this.each(function(){
+						result += this.innerText
+					});*/
+					for (var i = 0, len = this.length; i < len; i++) {
+						result += this[i].innerText;
+					}
+					return result;
+				} else {
+					/*this.each(function(){
+						this.innerText = text;
+					});*/
+					for (var i = 0, len = this.length; i < len; i++) {
+						this[i].innerText = text;
+					}
+					return this;
+				}
+			},
+			append: function(context) {
+				if (jQuery.isString(context)) {
+					for (var i = 0, len = this.length; i < len; i++) {
+						this[i].innerHTML += context;
+					}
+				} else {
+					var $context = jQuery(context);
+					$context.appendTo(this);
+				}
+				return this;
+			},
+			appendTo: function(selector) { //把所有元素添加到指定元素后面
+				var $selector = jQuery(selector);
+				var result = [], tempNode = null;
+				for (var i = 0, len = this.length; i < len; i++) {
+					for (var j = 0, jLen = $selector.length; j < jLen; j++) {
+						if (j === 0) {
+							tempNode = this[i];
+							$selector[j].appendChild(tempNode);
+							result.push(tempNode);
+						} else {
+							tempNode = this[i].cloneNode(true);
+							$selector[j].appendChild(tempNode);
+							result.push(tempNode);
+						}
+					}
+				}
+				// 使用each改造
+				/*this.each(function(){
+					var self = this;
+					$selector.each(function(i){
+						tempNode = i === 0 ? self : self.cloneNode(true);
+						this.appendChild(tempNode);
+						result.push(tempNode);
+					});
+				});*/
+				return jQuery(result);
+			},
+			prepend: function(context) {
+				if (jQuery.isString(context)) {
+					for (var i = 0, len = this.length; i < len; i++) {
+						this.innerHTML = context + this.innerHTML;
+					}
+				} else {
+					var $context = jQuery(context);
+					$context.prependTo(this);
+				}
+				return this;
+			},
+			prependTo: function(selector) {
+				var result = [];
+				var $selector = jQuery(selector), tempNode = null;
+				for (var i = 0, len = this.length; i < len; i++) {
+					for (var j = 0, jLen = $selector.length; j < jLen; j++) {
+						if (j === 0) {
+							tempNode = this[i];
+							$selector[j].insertBefore(tempNode, $selector[j].firstChild);
+							result.push(tempNode);
+						} else {
+							tempNode = this[i].cloneNode(true);
+							$selector[j].insertBefore(tempNode, $selector[j].firstChild);
+							result.push(tempNode);
+						}
+					}
+				}
+				return jQuery(result);
+			},
+			// 属性和节点方法
+			attr: function(context, val) {
+				if (!jQuery.isString(context) && !jQuery.isObject(context)) return this;
+				var self = this;
+				if (jQuery.isString(context)) {
+					if (arguments.length == 1) {
+						return this.get(0).getAttribute(context);
+					} else if (arguments.length >= 2) {
+						for (var i = 0, len = this.length; i < len; i++) {
+							this[i].setAttribute(context, val);
+						}
+						/*this.each(function(key, val){
+							this.setAttribute(key, val);
+						});*/
+					}
+				} else if (jQuery.isObject(context)) { //遍历这个对象，把所有属性添加到这个节点中
+					for (var key in context) {
+						for (var i = 0, len = this.length; i < len; i++) {
+							this[i].setAttribute(key, context[key]);
+						}
+					}
+					/*jQuery.each(function(key, val){
+						self.each(function(){
+							this.setAttribute(key, val);
+						});
+					});*/
+				}
+				return this;
+			},
+			props: function (context, val) {
+				if (!jQuery.isString(context) && !jQuery.isObject(context)) return this;
+				if (jQuery.isString(context)) {
+					if (arguments.length == 1) {
+						return this[0][context];
+					} else if (arguments.length >= 2) {
+						for (var i = 0, len = this.length; i < len; i++) {
+							this[i][context] = val;
+						}
+					}
+				} else if (jQuery.isObject(context)) {
+					for (var key in context) {
+						for (var i = 0, len = this.length; i < len; i++) {
+							this[i][key] = context[key];
+						}
+					}
+				}
+				return this;
+			},
+			css: function(styleName, style) {
+				if (arguments.length === 1) {
+					if (jQuery.isString(styleName)) {
+						jQuery.getStyle(this[0], style);
+					} else if (jQuery.isObject(styleName)) {
+						for (var key in styleName) {
+							for (var i = 0, len = this.length; i < len; i++) {
+								this[i]['style'][key] = style;
+							}
+						}
+					}
+				} else if (arguments.length >= 2) {
+					for (var i = 0, len = this.length; i < len; i++) {
+						this[i]['style'][styleName] = style;
+					}
+				}
+				return this;
+			},
+			val: function(name, value) {
+				if (arguments.length === 1) {
+					return this.get(0).value;
+				} else if (arguments.length >= 2) {
+					for (var i = 0, len = this.length; i < len; i++) {
+						this[i].value = value;
+					}
+				}
+				return this;
+			},
+			_val: function() {
+				if (arguments.length === 1) {
+					return this.props('value');
+				} else {
+					return this.props('value', value);
+				}
+			},
+			hasClass: function(className) {
+				for (var i = 0, len = this.length; i < len; i++) {
+					if ((' ' + this[i].className + ' ').indexOf(' ' + className + ' ') > -1 )
+						return true;
+				}
+				return false;
+			},
+			_hasClass: function(className) {
+				var flag = false;
+				this.each(function(){
+					if ((' ' + this.className + ' ').indexOf(' ' + className + ' ') > -1 ) {
+						flag = true;
+						return false;					
+					}
+				});
+				return flag;
+			},
+			addClass: function(className) {
+				for (var i = 0, len = classNames.length; i < len; i++) {
+					if (!jQuery(this[j]).hasClass(className))
+						this[j].className += ' ' + className;
+				}
+				return this;
+			},
+			_addClass: function(classNames) {
+				var className = null;
+				var classNames = jQuery.trim(classNames).split(' ');
+				for (var i = 0, len = classNames.length; i < len; i++) {
+					for (var j = 0, jLen = this.length; j < jLen; j++) {
+						className = jQuery.trim(classNames[i]);
+						if (!jQuery(this[j]).hasClass(className))
+							this[j].className += ' ' + className;
+					}
+				}
+				var $this = null;
+				/*this.each(function(){
+					$this = jQuery(this);
+					jQuery.each(classNames, function(key, val){
+						if (!$this.hasClass(val)) $this[0].className += ' ' + val;
+					});
+				});*/
+				return this;
+			},
+			removeClass: function(className) {
+				if (arguments.length === 0) {
+					for (var i = 0, len = this.length; i < len; i++) {
+						this[i].className = '';
+					}
+				} else {
+					for (var i = 0, len = this.length; i < len; i++) {
+						this[i].className = (' ' + this[i].className + '').replace(' ' + className + ' ', '');
+					}
+				}
+
+				return this;
+			},
+			_removeClass: function(classNames) {
+				var className = null;
+				if (arguments.length === 0) {
+					for (var i = 0, len = this.length; i < len; i++) {
+						this[i].className = '';
+					}
+				} else {
+					classNames = jQuery.trim(classNames).split(' ');
+					for (var i = 0, len = classNames.length; i < len; i++) {
+						className = classNames[i];
+						className = new RegExp('\\b' + className + '\\b');
+						for (var j = 0, jLen = this.length; j < jLen; j++) {
+							this[j].className = this[j].className.replace(className, '');
+						}
+					}
+				}
+				/*if (arguments.length === 0) {
+					this.each(function(){
+						this.className = '';
+					});
+				} else {
+					classNames = jQuery.trim(classNames).split(' ');
+					var $this = null;
+					this.each(function(){
+						$this = this;
+						jQuery.each(classNames, function(key, val){
+							$this.className = (' ' + $this.className + ' ').replace(' ' + val + ' ', '');
+						});
+					});
+				}*/
+				return this;
+			},
+			toggleClass: function(className) {
+				var $this = jQuery(this[i]);
+				for (var i = 0, len = this.length; i < len; i++) {
+					if($this.hasClass(className)) {
+						$this.removeClass(className);
+					} else {
+						$this.addClass(className);
+					}
+				}
+				return this;
+			},
+			_toggleClass: function(classNames) {
+				var $this = null;
+				var classNames = jQuery.trim(classNames).split(' ');
+				for (var i = 0, len = classNames.length; i < len; i++) {
+					for (var j = 0, jLen = this.length; j < jLen; j++) {
+						$this = jQuery(this[j]);
+						if($this.hasClass(className)) {
+							$this.removeClass(className);
+						} else {
+							$this.addClass(className);
+						}
+					}
+				}
+				/*this.each(function(){
+					$this = jQuery(this);
+					jQuery.each(classNames, function(key, val){
+						if ($this.hasClass(val)) {
+							$this.removeClass(val);
+						} else {
+							$this.addClass(val);
+						}
+					});
+				});*/
+				return this;
+			},
+			// 事件相关方法
+			/*on: function(type, fn) {
+				this.each(function(){
+					jQuery.addEvent(this, type, fn);
+				});
+			},
+			off: function(type, fn) {
+				this.each(function(){
+					jQuery.removeEvent(this, type, fn);
+				});
+			},*/
+			on: function(type, fn) {
+				var self = this;
+				if (arguments.length === 2)
+					this.each(function(){
+						this.$_event_cache = this.$_event_cache || {};
+						if (this.$this.$_event_cache[type]) {
+							$this.$_event_cache[type].push(fn);
+						} else {
+							$this.$_event_cache[type] = [fn];
+							jQuery.addEvent(this, type, function(e){
+								/*for (var i = 0, len = self.$_event_cache[type].length; i < len; i++) {
+									self.$_event_cache[type][i].call(self, e);
+								}*/
+								jQuery.each(self.$_event_cache[type], function(index, val){
+									this.call(self, e);
+								});
+							});
+						}
+					});
+				return this;
+			},
+			off: function(type, fn) {
+				var self = this;
+				var argLen = arguments.length;
+				this.each(function(){
+					if (this.$_event_cache) {
+						if (argLen === 0) {
+							for( var key in this.$_event_cache ) {
+		                        this.$_event_cache[ key ] = [];
+		                    }
+						} else if (argLen === 1) {
+							this.$_event_cache[type] = [];
+						} else {
+							for (var i = this.$_event_cache[type].length - 1; i >= 0; i--) {
+								if (this.$_event_cache[type][index] === fn)
+									this.$_event_cache[type][index].splice(index, 1);
+							}
+						}
+					} else {
+						return null;
+					}
+				});
+				
+				return this;
+			}
+		});
+
+		jQuery.each("blur focus focusin focusout load resize scroll unload click dblclick mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave change select submit keydown keypress keyup error contextmenu".split(''), function(index, eventName){
+			jQuery.fn[eventName] = function(fn) {
+				return this.on(eventName, fn);
+			}
+		});
+
+		w.jQuery = w.$ = jQuery;
+	}(window));
+
+	console.log($('div'));
+	console.log($(function(){
+		console.log('i\'m fine');
+	}));
+	console.log('how are you?');
+	$.each([1,2,3,4], function(index, val){
+		if (val === 2) return false;
+		console.log(index, val);
+	});
+
+	console.log($.map({a: 1, b: 2, c: 3}, function(key, val){
+		return val;
+	}));
+	console.log($('.a').text('<a>我是div</a>').last());
+	console.log($('.distination').appendTo('.target'));
+	console.log($('a').prependTo('.here'));
+	$('.a').attr('a', 123);
+	var func = function(e) {
+		console.log(e);
+	}
+	document.querySelector('.here').addEventListener('click', func);
+	$.ajax({
+		url: './app.json',
+		dataType: 'json',
+		success: function(res) {
+			console.log(res);
+		}
+	});
+</script>
+</html>
